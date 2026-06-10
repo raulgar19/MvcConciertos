@@ -1,6 +1,7 @@
-﻿using MvcConciertos.Models;
+using MvcConciertos.Models;
 using Newtonsoft.Json;
 using System.Net.Http.Headers;
+using Microsoft.Extensions.Configuration;
 
 namespace MvcConciertos.Services
 {
@@ -9,11 +10,28 @@ namespace MvcConciertos.Services
     {
         private readonly HttpClient client;
         private readonly MediaTypeWithQualityHeaderValue headers;
+        private readonly IConfiguration configuration;
 
-        public ConciertosService(HttpClient httpClient)
+        public ConciertosService(HttpClient httpClient, IConfiguration configuration)
         {
             client = httpClient;
             headers = new MediaTypeWithQualityHeaderValue("application/json");
+            this.configuration = configuration;
+        }
+
+        public async Task<string> PreguntarIaAsync(string pregunta)
+        {
+            string baseUrl = configuration["ApiUrls:ApiIaUrl"] ?? "";
+            string requestUrl = $"{baseUrl}?pregunta={Uri.EscapeDataString(pregunta)}";
+
+            using (HttpResponseMessage response = await client.GetAsync(requestUrl))
+            {
+                if (response.IsSuccessStatusCode)
+                {
+                    return await response.Content.ReadAsStringAsync();
+                }
+                return "Error al comunicarse con la IA.";
+            }
         }
 
         public async Task<List<CategoriaEvento>> GetCategoriasAsync()

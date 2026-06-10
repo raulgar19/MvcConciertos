@@ -31,5 +31,12 @@ namespace MvcConciertos.Controllers
 
             return View(eventos);
         }
+
+        [HttpGet]
+        public async Task<IActionResult> PreguntarIa(string pregunta)
+        {
+            string respuesta = await _service.PreguntarIaAsync(pregunta);
+            return Content(respuesta, "text/plain");
+        }
     }
 }

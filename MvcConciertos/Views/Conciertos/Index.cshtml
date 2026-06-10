@@ -3,7 +3,7 @@
 @{
     ViewData["Title"] = "Gestión de Conciertos y Eventos";
     var categorias = ViewData["Categorias"] as List<CategoriaEvento>;
-    var s3Url = ViewData["S3Url"] as string;
+    var s3Url = configuration["AWS:BucketUrl"];
 }
 
 <div class="container mt-4">
@@ -105,7 +105,7 @@
         contenedorRespuesta.classList.add("d-none");
 
         try {
-            const endpointUrl = `/Conciertos/PreguntarIa?pregunta=${encodeURIComponent(pregunta)}`;
+            const endpointUrl = `@Url.Action("PreguntarIa", "Conciertos")?pregunta=${encodeURIComponent(pregunta)}`;
             const response = await fetch(endpointUrl);
 
             if (!response.ok) throw new Error("Error en la respuesta del servidor.");
