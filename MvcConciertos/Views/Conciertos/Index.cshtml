@@ -1,0 +1,57 @@
+@model List<Evento>
+@using Microsoft.Extensions.Configuration
+
+@{
+    ViewData["Title"] = "Gestión de Conciertos";
+    var categorias = ViewData["Categorias"] as List<CategoriaEvento>;
+    var s3Url = configuration.GetValue<string>("AWS:BucketUrl");
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-3">
+            <h4 class="mb-3">Categorías</h4>
+            <div class="list-group">
+                <a asp-action="Index" asp-route-idCategoria="" class="list-group-item list-group-item-action">
+                    Todos los Eventos
+                </a>
+                @if (categorias != null)
+                {
+                    @foreach (var cat in categorias)
+                    {
+                        <a asp-action="Index" asp-route-idCategoria="@cat.IdCategoria" class="list-group-item list-group-item-action">
+                            @cat.Nombre
+                        </a>
+                    }
+                }
+            </div>
+        </div>
+
+        <div class="col-md-9">
+            <h4 class="mb-3">Eventos Disponibles</h4>
+            <div class="row">
+                @if (Model != null && Model.Any())
+                {
+                    @foreach (var evento in Model)
+                    {
+                        <div class="col-md-4 mb-4">
+                            <div class="card h-100 shadow-sm">
+                                <img src="@($"{s3Url}{evento.Imagen}")" class="card-img-top" alt="@evento.Artista" style="height: 200px; object-fit: cover;">
+                                <div class="card-body">
+                                    <h5 class="card-title">@evento.Nombre</h5>
+                                    <p class="card-text text-muted"><strong>Artista:</strong> @evento.Artista</p>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="col-12">
+                        <div class="alert alert-info">No se encontraron eventos para esta categoría.</div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
