@@ -1,26 +1,26 @@
 @model List<Evento>
-@using Microsoft.Extensions.Configuration
 
 @{
-    ViewData["Title"] = "Gestión de Conciertos";
+    ViewData["Title"] = "Gestión de Conciertos y Eventos";
     var categorias = ViewData["Categorias"] as List<CategoriaEvento>;
-    var s3Url = configuration.GetValue<string>("AWS:BucketUrl");
+    var s3Url = ViewData["S3Url"] as string;
 }
 
 <div class="container mt-4">
     <div class="row">
-        <div class="col-md-3">
-            <h4 class="mb-3">Categorías</h4>
-            <div class="list-group">
-                <a asp-action="Index" asp-route-idCategoria="" class="list-group-item list-group-item-action">
-                    Todos los Eventos
+
+        <div class="col-md-3 mb-4">
+            <h4 class="mb-3 text-secondary">Categorías</h4>
+            <div class="list-group shadow-sm">
+                <a asp-action="Index" asp-route-idCategoria="" class="list-group-item list-group-item-action font-weight-bold">
+                    💥 Todos los Eventos
                 </a>
                 @if (categorias != null)
                 {
                     @foreach (var cat in categorias)
                     {
                         <a asp-action="Index" asp-route-idCategoria="@cat.IdCategoria" class="list-group-item list-group-item-action">
-                            @cat.Nombre
+                            📁 @cat.Nombre
                         </a>
                     }
                 }
@@ -28,18 +28,22 @@
         </div>
 
         <div class="col-md-9">
-            <h4 class="mb-3">Eventos Disponibles</h4>
+            <h4 class="mb-3 text-secondary">Eventos Disponibles</h4>
             <div class="row">
                 @if (Model != null && Model.Any())
                 {
                     @foreach (var evento in Model)
                     {
                         <div class="col-md-4 mb-4">
-                            <div class="card h-100 shadow-sm">
-                                <img src="@($"{s3Url}{evento.Imagen}")" class="card-img-top" alt="@evento.Artista" style="height: 200px; object-fit: cover;">
-                                <div class="card-body">
-                                    <h5 class="card-title">@evento.Nombre</h5>
-                                    <p class="card-text text-muted"><strong>Artista:</strong> @evento.Artista</p>
+                            <div class="card h-100 shadow-sm border-light">
+                                <img src="@($"{s3Url}{evento.Imagen}")" class="card-img-top" alt="@evento.Artista" style="height: 180px; object-fit: cover;">
+
+                                <div class="card-body d-flex flex-column justify-content-between">
+                                    <div>
+                                        <h5 class="card-title text-primary mb-1">@evento.Nombre</h5>
+                                        <p class="card-text text-muted small"><strong>Artista:</strong> @evento.Artista</p>
+                                    </div>
+                                    <span class="badge bg-info text-dark mt-2 w-50">ID Cat: @evento.IdCategoria</span>
                                 </div>
                             </div>
                         </div>
@@ -48,10 +52,76 @@
                 else
                 {
                     <div class="col-12">
-                        <div class="alert alert-info">No se encontraron eventos para esta categoría.</div>
+                        <div class="alert alert-warning shadow-sm">No se han encontrado conciertos programados para esta categoría.</div>
                     </div>
                 }
             </div>
         </div>
     </div>
+
+    <hr class="my-5" />
+
+    <div class="row mb-5">
+        <div class="col-12">
+            <div class="card border-primary shadow">
+                <div class="card-header bg-primary text-white d-flex align-items-center">
+                    <h5 class="mb-0">🧠 Asistente Virtual IA (Azure OpenAI + API HTTP)</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">¿Tienes dudas sobre el examen o la agenda de los artistas? Pregúntale a nuestro modelo Serverless.</p>
+
+                    <div class="input-group mb-3">
+                        <input type="text" id="txtPregunta" class="form-control form-control-lg" placeholder="Ej: ¿Quién actúa en el evento de Gira Gallega 2023?">
+                        <button class="btn btn-success btn-lg" type="button" id="btnPreguntar">Enviar Consulta</button>
+                    </div>
+
+                    <div id="loadingIa" class="text-primary d-none my-3 align-items-center">
+                        <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                        <strong>Procesando tu consulta en AWS Lambda...</strong>
+                    </div>
+
+                    <div id="respuestaIa" class="alert alert-secondary d-none mt-3 shadow-sm p-3" style="white-space: pre-line; background-color: #f8f9fa; border-left: 5px solid #6c757d;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
+
+<script>
+    document.getElementById("btnPreguntar").addEventListener("click", async () => {
+        const inputPregunta = document.getElementById("txtPregunta");
+        const pregunta = inputPregunta.value.trim();
+
+        if (!pregunta) {
+            alert("⚠️ Por favor, introduce una pregunta para la IA.");
+            return;
+        }
+
+        const loader = document.getElementById("loadingIa");
+        const contenedorRespuesta = document.getElementById("respuestaIa");
+
+        loader.classList.remove("d-none");
+        loader.classList.add("d-flex");
+        contenedorRespuesta.classList.add("d-none");
+
+        try {
+            const endpointUrl = `/Conciertos/PreguntarIa?pregunta=${encodeURIComponent(pregunta)}`;
+            const response = await fetch(endpointUrl);
+
+            if (!response.ok) throw new Error("Error en la respuesta del servidor.");
+
+            const textoResultado = await response.text();
+
+            contenedorRespuesta.innerText = textoResultado;
+            contenedorRespuesta.classList.remove("d-none");
+        }
+        catch (error) {
+            contenedorRespuesta.innerText = "❌ No se ha podido obtener respuesta de la IA. Comprueba los logs de tu AWS Lambda.";
+            contenedorRespuesta.classList.remove("d-none");
+        }
+        finally {
+            loader.classList.add("d-none");
+            loader.classList.remove("d-flex");
+        }
+    });
+</script>
